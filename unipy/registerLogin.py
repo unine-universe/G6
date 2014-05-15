@@ -30,13 +30,23 @@ class RegisterLogin(object):
     def login(self, user_name=None, password=None):
         # Charger et compléter le template HTML
         if user_name and password:
-            # verify login
             print(cherrypy.url())
-            # after login
-            cherrypy.session[SESSION_KEY] = cherrypy.request.login = user_name
-            raise cherrypy.HTTPRedirect("/compte")
+            # verify login
+            db = openDB()
+            cursor = db.cursor()
+            print("SELECT * FROM user WHERE username='{0}' AND password='{1}'".format(user_name, password))
+            cursor.execute("SELECT * FROM user WHERE username='{0}' AND password='{1}'".format(user_name, password))
+            user = cursor.fetchone() # prendre une ligne. fetchall() égal à tous les lignes.
+            cursor.close()
+            db.close()
+            if user:
+                # after login
+                cherrypy.session[SESSION_KEY] = cherrypy.request.login = user_name
+                raise cherrypy.HTTPRedirect("/compte")
+            else:
+                return self.env.get_template('login.html').render(msg = "login invalide!")
         else:
-            return self.env.get_template('login.html').render()
+            return self.env.get_template('login.html').render(msg = "entrez votre ...")
 
     def logout(self):
         cherrypy.session[SESSION_KEY] = None
